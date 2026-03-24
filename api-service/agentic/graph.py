@@ -30,7 +30,10 @@ def build_graph():
     builder.add_node("failure", failure_node)
 
     builder.set_entry_point("router")
-    builder.add_edge("router", "policy_rag")
+    builder.add_conditional_edges(
+        "router",
+        lambda s: "policy_rag" if s.get("intent") == "audit" else "discovery",
+    )
     builder.add_edge("policy_rag", "discovery")
     builder.add_edge("discovery", "sql_gen")
     builder.add_conditional_edges("sql_gen", should_retry)
