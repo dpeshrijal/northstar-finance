@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { ChatInput } from "@/components/ChatInput";
 import { Reasoning } from "@/components/Reasoning";
 import { ChartPanel } from "@/components/ChartPanel";
+import { ViolationsTable } from "@/components/ViolationsTable";
 
 export default function Home() {
   const [question, setQuestion] = useState("");
@@ -121,7 +122,8 @@ export default function Home() {
                 setShow={setShowReasoning}
               />
 
-              <ChartPanel result={result} />
+              <ViolationsTable result={result} />
+              {!result?.is_violation && <ChartPanel result={result} />}
             </motion.div>
           )}
         </AnimatePresence>

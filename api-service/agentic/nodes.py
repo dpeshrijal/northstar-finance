@@ -190,6 +190,7 @@ def synthesis_node(state: AgentState) -> Dict[str, Any]:
     Do NOT invent facts, totals, dates, or years.
     Do NOT infer underlying record counts beyond row_count unless explicitly present in DATA FOUND.
     Avoid statements like "single entry" unless DATA FOUND explicitly shows only one record.
+    If row_count > 5, do NOT enumerate individual rows; summarize the count and refer to the violations table.
     If intent is analysis, focus on totals. If intent is audit, focus on violations.
     """
 
