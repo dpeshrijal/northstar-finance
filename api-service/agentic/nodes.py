@@ -117,12 +117,27 @@ def sql_generator_node(state: AgentState) -> Dict[str, Any]:
                 cur.execute(query)
                 colnames = [d[0] for d in cur.description]
                 data = []
+                label_priority = [
+                    "region",
+                    "month",
+                    "date",
+                    "name",
+                    "cost_center_name",
+                    "cost_center",
+                    "id",
+                    "description",
+                ]
                 for r in cur.fetchall():
                     item = dict(zip(colnames, r))
                     for k, v in item.items():
                         if isinstance(v, (Decimal, float)):
                             item[k] = float(v)
-                    item["label"] = str(item.get("description") or item.get("name") or "Entry")
+                    label = None
+                    for key in label_priority:
+                        if key in item and item[key] is not None:
+                            label = str(item[key])
+                            break
+                    item["label"] = label or "Entry"
                     data.append(item)
         return {"db_data": data, "sql_query": query, "sql_error": None}
     except Exception as e:

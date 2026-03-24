@@ -5,16 +5,7 @@ import { askAgent } from "@/services/api";
 import { Header } from "@/components/Header";
 import { ChatInput } from "@/components/ChatInput";
 import { Reasoning } from "@/components/Reasoning";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
+import { ChartPanel } from "@/components/ChartPanel";
 
 export default function Home() {
   const [question, setQuestion] = useState("");
@@ -66,9 +57,19 @@ export default function Home() {
               className="bg-white/90 backdrop-blur p-10 rounded-[2rem] border border-slate-200 shadow-[0_30px_60px_-24px_rgba(15,23,42,0.25)]"
             >
               {result?.status === "error" && (
-                <div className="mb-8 p-4 rounded-2xl border border-red-200 bg-red-50 text-red-700 text-sm font-semibold">
-                  {result?.error?.code ? `[${result?.error?.code}] ` : ""}
-                  {result?.explanation}
+                <div className="mb-8 p-4 rounded-2xl border border-amber-200 bg-amber-50 text-amber-800 text-sm font-semibold">
+                  {result?.error?.code === "OUT_OF_SCOPE" ? (
+                    <span>
+                      This assistant only answers questions about your finance
+                      data and policies. Try asking about spend, revenue,
+                      budgets, regions, or compliance.
+                    </span>
+                  ) : (
+                    <span>
+                      {result?.error?.code ? `[${result?.error?.code}] ` : ""}
+                      {result?.explanation}
+                    </span>
+                  )}
                 </div>
               )}
               {/* Report Header */}
@@ -84,8 +85,8 @@ export default function Home() {
 
                 {/* DETERMINISTIC BADGE LOGIC */}
                 {result?.status === "error" ? (
-                  <div className="self-start px-4 py-1.5 bg-red-50 text-red-600 rounded-full text-[10px] font-semibold tracking-[0.2em] border border-red-100 uppercase">
-                    Error
+                  <div className="self-start px-4 py-1.5 bg-amber-50 text-amber-700 rounded-full text-[10px] font-semibold tracking-[0.2em] border border-amber-100 uppercase">
+                    Out of Scope
                   </div>
                 ) : result?.is_violation ? (
                   <div className="self-start px-4 py-1.5 bg-red-50 text-red-600 rounded-full text-[10px] font-semibold tracking-[0.2em] border border-red-100 uppercase">
@@ -113,6 +114,8 @@ export default function Home() {
                 show={showReasoning}
                 setShow={setShowReasoning}
               />
+
+              <ChartPanel result={result} />
             </motion.div>
           )}
         </AnimatePresence>
