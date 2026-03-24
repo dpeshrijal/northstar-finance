@@ -35,19 +35,25 @@ export default function Home() {
       <div className="relative max-w-4xl mx-auto">
         <Header />
 
-        <div className="mb-8">
-          <p className="text-sm text-slate-500 leading-relaxed max-w-2xl">
-            Secure, policy-aware analytics for finance teams. Ask natural language
-            questions and get audit-grade answers with a full reasoning trail.
-          </p>
+        <div
+          className={
+            result
+              ? "mb-8"
+              : "min-h-[45vh] flex flex-col justify-center mb-10"
+          }
+        >
+          <div className="mb-8 text-center">
+            <p className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
+              What would you like to analyze today?
+            </p>
+          </div>
+          <ChatInput
+            question={question}
+            setQuestion={setQuestion}
+            handleAsk={handleAsk}
+            loading={loading}
+          />
         </div>
-
-        <ChatInput
-          question={question}
-          setQuestion={setQuestion}
-          handleAsk={handleAsk}
-          loading={loading}
-        />
 
         <AnimatePresence>
           {result && (

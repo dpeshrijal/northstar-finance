@@ -1,4 +1,4 @@
-import { Database, ShieldCheck } from "lucide-react";
+import { Database } from "lucide-react";
 
 export const Header = () => (
   <div className="flex items-center justify-between mb-10">
@@ -15,9 +15,8 @@ export const Header = () => (
         </h1>
       </div>
     </div>
-    <div className="hidden md:flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-      <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
-      Agentic AI
+    <div className="hidden md:block text-[11px] uppercase tracking-[0.3em] text-slate-400">
+      BETA
     </div>
   </div>
 );
