@@ -36,9 +36,20 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#fcfcfd] p-6 md:p-16 text-slate-900 selection:bg-blue-100">
-      <div className="max-w-4xl mx-auto">
+    <main className="relative min-h-screen bg-[#f7f8fb] p-6 md:p-16 text-slate-900 selection:bg-slate-200">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(1200px_circle_at_20%_-10%,#e8edf6,transparent_60%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.6),rgba(255,255,255,0.2))]" />
+      </div>
+      <div className="relative max-w-4xl mx-auto">
         <Header />
+
+        <div className="mb-8">
+          <p className="text-sm text-slate-500 leading-relaxed max-w-2xl">
+            Secure, policy-aware analytics for finance teams. Ask natural language
+            questions and get audit-grade answers with a full reasoning trail.
+          </p>
+        </div>
 
         <ChatInput
           question={question}
@@ -52,38 +63,48 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-10 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-slate-100"
+              className="bg-white/90 backdrop-blur p-10 rounded-[2rem] border border-slate-200 shadow-[0_30px_60px_-24px_rgba(15,23,42,0.25)]"
             >
+              {result?.status === "error" && (
+                <div className="mb-8 p-4 rounded-2xl border border-red-200 bg-red-50 text-red-700 text-sm font-semibold">
+                  {result?.error?.code ? `[${result?.error?.code}] ` : ""}
+                  {result?.explanation}
+                </div>
+              )}
               {/* Report Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4 text-black">
                 <div className="max-w-xl">
-                  <h2 className="text-3xl font-extrabold tracking-tight mb-3 italic">
+                  <h2 className="text-3xl font-semibold tracking-tight mb-3">
                     {result?.title}
                   </h2>
-                  <p className="text-slate-500 text-lg leading-relaxed font-medium">
+                  <p className="text-slate-500 text-base leading-relaxed">
                     {result?.explanation}
                   </p>
                 </div>
 
                 {/* DETERMINISTIC BADGE LOGIC */}
-                {result?.is_violation ? (
-                  <div className="self-start px-5 py-2 bg-red-50 text-red-600 rounded-full text-xs font-black tracking-widest border border-red-100 animate-pulse uppercase">
-                    🚩 Violation
+                {result?.status === "error" ? (
+                  <div className="self-start px-4 py-1.5 bg-red-50 text-red-600 rounded-full text-[10px] font-semibold tracking-[0.2em] border border-red-100 uppercase">
+                    Error
+                  </div>
+                ) : result?.is_violation ? (
+                  <div className="self-start px-4 py-1.5 bg-red-50 text-red-600 rounded-full text-[10px] font-semibold tracking-[0.2em] border border-red-100 uppercase">
+                    Violation
                   </div>
                 ) : (
-                  <div className="self-start px-5 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-black tracking-widest border border-blue-100 uppercase">
-                    ✅ Clean Audit
+                  <div className="self-start px-4 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-semibold tracking-[0.2em] border border-emerald-100 uppercase">
+                    Clean Audit
                   </div>
                 )}
               </div>
 
               {/* Action Recommendation for Violations */}
-              {result?.is_violation && (
-                <div className="mb-10 p-6 bg-red-50/50 rounded-2xl border border-red-100">
-                  <p className="text-red-800 font-bold text-sm uppercase tracking-tight mb-1">
+              {result?.is_violation && result?.status !== "error" && (
+                <div className="mb-10 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                  <p className="text-slate-800 font-semibold text-xs uppercase tracking-[0.2em] mb-2">
                     Recommended Action:
                   </p>
-                  <p className="text-red-700 font-medium">{result?.action}</p>
+                  <p className="text-slate-700">{result?.action}</p>
                 </div>
               )}
 

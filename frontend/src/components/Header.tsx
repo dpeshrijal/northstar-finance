@@ -1,17 +1,23 @@
-import { Database } from "lucide-react";
+import { Database, ShieldCheck } from "lucide-react";
 
 export const Header = () => (
-  <div className="flex items-center justify-between mb-12">
+  <div className="flex items-center justify-between mb-10">
     <div className="flex items-center gap-3">
-      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-2.5 rounded-xl shadow-lg shadow-blue-200">
-        <Database className="text-white w-5 h-5" />
+      <div className="bg-slate-900 text-white p-2.5 rounded-xl">
+        <Database className="w-4 h-4" />
       </div>
-      <h1 className="text-xl font-black tracking-tight text-slate-800 uppercase">
-        Northstar <span className="text-blue-600">Finance</span>
-      </h1>
+      <div className="leading-tight">
+        <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
+          Northstar
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          Finance Intelligence
+        </h1>
+      </div>
     </div>
-    <div className="flex gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
-      <span>Agentic AI v2.0</span>
+    <div className="hidden md:flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+      <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
+      Agentic AI
     </div>
   </div>
 );
