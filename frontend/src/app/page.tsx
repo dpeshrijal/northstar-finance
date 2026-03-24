@@ -1,6 +1,10 @@
 "use client";
 import { useState } from "react";
-import { askAgent } from "./services/api";
+import { motion, AnimatePresence } from "framer-motion";
+import { askAgent } from "@/services/api";
+import { Header } from "@/components/Header";
+import { ChatInput } from "@/components/ChatInput";
+import { Reasoning } from "@/components/Reasoning";
 import {
   BarChart,
   Bar,
@@ -10,18 +14,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-  PieChart,
-  Pie,
-  Legend,
 } from "recharts";
-import {
-  Database,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  FileText,
-  Code2,
-} from "lucide-react";
 
 export default function Home() {
   const [question, setQuestion] = useState("");
@@ -32,260 +25,76 @@ export default function Home() {
   const handleAsk = async () => {
     setLoading(true);
     setResult(null);
+    setShowReasoning(false);
     try {
       const data = await askAgent(question);
       setResult(data);
     } catch (e) {
-      console.error("Frontend Error:", e);
+      console.error(e);
     }
     setLoading(false);
   };
 
-  // Logic to find numeric data for Recharts
-  const getNumberKey = (dataObj: any) => {
-    if (!dataObj) return "";
-    return (
-      Object.keys(dataObj).find(
-        (key) =>
-          (typeof dataObj[key] === "number" ||
-            !isNaN(parseFloat(dataObj[key]))) &&
-          key !== "id",
-      ) || ""
-    );
-  };
-
-  // Logic to find labels for Recharts
-  const getLabelKey = (dataObj: any) => {
-    if (!dataObj) return "";
-    const numKey = getNumberKey(dataObj);
-    return (
-      Object.keys(dataObj).find(
-        (key) => key !== numKey && key !== "id" && key !== "label",
-      ) || "label"
-    );
-  };
-
   return (
-    <main className="min-h-screen bg-[#f8fafc] p-4 md:p-12 text-slate-900 font-sans">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header Section */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-200">
-            <Database className="text-white w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-            Northstar <span className="text-blue-600">Finance AI</span>
-          </h1>
-        </div>
+    <main className="min-h-screen bg-[#fcfcfd] p-6 md:p-16 text-slate-900 selection:bg-blue-100">
+      <div className="max-w-4xl mx-auto">
+        <Header />
 
-        {/* Input Bar */}
-        <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex items-center transition-all focus-within:ring-4 focus-within:ring-blue-500/10">
-          <input
-            className="flex-1 p-4 text-lg bg-transparent outline-none"
-            placeholder="Ask about spend, totals, or policy violations..."
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAsk()}
-          />
-          <button
-            onClick={handleAsk}
-            disabled={loading}
-            className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:bg-slate-300 transition-all flex items-center gap-2"
-          >
-            {loading ? (
-              "Analyzing..."
-            ) : (
-              <>
-                <Sparkles size={18} /> Analyze
-              </>
-            )}
-          </button>
-        </div>
+        <ChatInput
+          question={question}
+          setQuestion={setQuestion}
+          handleAsk={handleAsk}
+          loading={loading}
+        />
 
-        {/* Results Container */}
-        {result && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6">
-            <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
-              {/* Analysis Header */}
-              <div className="flex items-start justify-between mb-8">
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-bold text-slate-800 leading-tight">
-                    {result?.title || "Financial Analysis"}
+        <AnimatePresence>
+          {result && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white p-10 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-slate-100"
+            >
+              {/* Report Header */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4 text-black">
+                <div className="max-w-xl">
+                  <h2 className="text-3xl font-extrabold tracking-tight mb-3 italic">
+                    {result?.title}
                   </h2>
-                  <p className="text-slate-500 leading-relaxed max-w-2xl text-lg">
-                    {result?.explanation ||
-                      "Analysis processed. See details below."}
+                  <p className="text-slate-500 text-lg leading-relaxed font-medium">
+                    {result?.explanation}
                   </p>
                 </div>
 
-                {/* Safe Flag Detection */}
-                {result?.explanation?.toLowerCase()?.includes("violation") ||
-                result?.explanation?.toLowerCase()?.includes("flag") ||
-                result?.title?.toLowerCase()?.includes("violation") ? (
-                  <div className="bg-red-50 text-red-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-red-100 flex items-center gap-2">
-                    <span className="animate-pulse">🚩</span> Policy Flag
+                {/* DETERMINISTIC BADGE LOGIC */}
+                {result?.is_violation ? (
+                  <div className="self-start px-5 py-2 bg-red-50 text-red-600 rounded-full text-xs font-black tracking-widest border border-red-100 animate-pulse uppercase">
+                    🚩 Violation
                   </div>
                 ) : (
-                  <div className="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-100">
-                    AI Insight
+                  <div className="self-start px-5 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-black tracking-widest border border-blue-100 uppercase">
+                    ✅ Clean Audit
                   </div>
                 )}
               </div>
 
-              {/* Data Visualization Logic */}
-              {result?.data && result.data.length > 0 ? (
-                <div className="space-y-4">
-                  {result.data.length < 15 ? (
-                    <div className="h-[400px] w-full mt-10 rounded-2xl bg-slate-50/50 p-4 border border-slate-50">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={result.data}
-                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                        >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            vertical={false}
-                            stroke="#e2e8f0"
-                          />
-                          <XAxis
-                            dataKey="label"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: "#64748b", fontSize: 12 }}
-                            dy={10}
-                          />
-                          <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: "#64748b", fontSize: 12 }}
-                          />
-                          <Tooltip
-                            cursor={{ fill: "#f1f5f9" }}
-                            contentStyle={{
-                              borderRadius: "16px",
-                              border: "none",
-                              boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
-                            }}
-                          />
-                          <Bar
-                            dataKey={getNumberKey(result.data[0])}
-                            fill="#3b82f6"
-                            radius={[8, 8, 0, 0]}
-                            barSize={60}
-                          >
-                            {result.data.map((entry: any, index: number) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={
-                                  entry.label === "Budget"
-                                    ? "#94a3b8"
-                                    : "#3b82f6"
-                                }
-                              />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="mt-8 overflow-hidden rounded-xl border border-slate-200">
-                      <table className="w-full text-left border-collapse">
-                        <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold">
-                          <tr>
-                            {Object.keys(result.data[0])
-                              .slice(0, 5)
-                              .map((key) => (
-                                <th
-                                  key={key}
-                                  className="px-6 py-3 border-b border-slate-200"
-                                >
-                                  {key.replace("_", " ")}
-                                </th>
-                              ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-sm">
-                          {result.data
-                            .slice(0, 10)
-                            .map((row: any, i: number) => (
-                              <tr
-                                key={i}
-                                className="hover:bg-slate-50/50 transition-colors"
-                              >
-                                {Object.values(row)
-                                  .slice(0, 5)
-                                  .map((val: any, j: number) => (
-                                    <td
-                                      key={j}
-                                      className="px-6 py-4 text-slate-600"
-                                    >
-                                      {val?.toString()}
-                                    </td>
-                                  ))}
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl text-slate-400 gap-2">
-                  <Database size={24} className="opacity-20" />
-                  <p className="text-sm font-medium">
-                    No transactional data retrieved for this view.
+              {/* Action Recommendation for Violations */}
+              {result?.is_violation && (
+                <div className="mb-10 p-6 bg-red-50/50 rounded-2xl border border-red-100">
+                  <p className="text-red-800 font-bold text-sm uppercase tracking-tight mb-1">
+                    Recommended Action:
                   </p>
+                  <p className="text-red-700 font-medium">{result?.action}</p>
                 </div>
               )}
 
-              {/* Engine Reasoning Section */}
-              <div className="mt-10 pt-6 border-t border-slate-100">
-                <button
-                  onClick={() => setShowReasoning(!showReasoning)}
-                  className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-all text-xs font-bold tracking-widest"
-                >
-                  {showReasoning ? (
-                    <ChevronUp size={14} />
-                  ) : (
-                    <ChevronDown size={14} />
-                  )}
-                  SHOW ENGINE REASONING
-                </button>
-
-                {showReasoning && (
-                  <div className="mt-6 space-y-6 animate-in fade-in zoom-in-95 duration-300">
-                    {/* SQL Section */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-tighter">
-                        <Code2 size={12} /> SQL Query (Structured ERP Data)
-                      </div>
-                      <div className="p-5 bg-slate-900 rounded-2xl shadow-inner border border-slate-800">
-                        <code className="text-blue-400 text-sm font-mono block overflow-x-auto whitespace-pre">
-                          {result?.sql || "No SQL generated."}
-                        </code>
-                      </div>
-                    </div>
-
-                    {/* Policy Section */}
-                    {result?.policy && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-tighter">
-                          <FileText size={12} /> Policy Context (Unstructured
-                          Knowledge)
-                        </div>
-                        <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
-                          <p className="text-blue-800 text-sm italic leading-relaxed">
-                            "{result.policy}"
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+              <Reasoning
+                result={result}
+                show={showReasoning}
+                setShow={setShowReasoning}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </main>
   );
