@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+local.settings.json
+
+# Node
+node_modules/
+.next/
+out/
+build/
+.DS_Store

@@ -1,0 +1,5 @@
+azure-functions
+openai
+pydantic
+psycopg2-binary
+python-dotenv
