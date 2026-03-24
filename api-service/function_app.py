@@ -1,7 +1,7 @@
 import azure.functions as func
 import json
 import logging
-from workflow import app_graph
+from agentic.graph import app_graph
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
