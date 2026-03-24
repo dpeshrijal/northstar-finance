@@ -14,17 +14,24 @@ import {
   Pie,
   Legend,
 } from "recharts";
-import { Database, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import {
+  Database,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  FileText,
+  Code2,
+} from "lucide-react";
 
 export default function Home() {
   const [question, setQuestion] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [showSql, setShowSql] = useState(false);
+  const [showReasoning, setShowReasoning] = useState(false);
 
   const handleAsk = async () => {
     setLoading(true);
-    setResult(null); // Clear previous results
+    setResult(null);
     try {
       const data = await askAgent(question);
       setResult(data);
@@ -34,26 +41,26 @@ export default function Home() {
     setLoading(false);
   };
 
-  // Helper to find which key in the data object is the "number" we want to graph
   const getNumberKey = (dataObj: any) => {
     if (!dataObj) return "";
     return (
       Object.keys(dataObj).find(
         (key) =>
-          typeof dataObj[key] === "number" || !isNaN(parseFloat(dataObj[key])),
+          (typeof dataObj[key] === "number" ||
+            !isNaN(parseFloat(dataObj[key]))) &&
+          key !== "id",
       ) || ""
     );
   };
 
-  // Helper to find the "label" key (e.g., region name or 'Actual/Budget')
   const getLabelKey = (dataObj: any) => {
     if (!dataObj) return "";
+    const numKey = getNumberKey(dataObj);
     return (
-      Object.keys(dataObj).find((key) => key !== getNumberKey(dataObj)) || ""
+      Object.keys(dataObj).find((key) => key !== numKey && key !== "id") ||
+      numKey
     );
   };
-
-  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   return (
     <main className="min-h-screen bg-[#f8fafc] p-4 md:p-12 text-slate-900 font-sans">
@@ -72,7 +79,7 @@ export default function Home() {
         <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex items-center">
           <input
             className="flex-1 p-4 text-lg bg-transparent outline-none"
-            placeholder="e.g., Show me total spend by region"
+            placeholder="Search transactions or ask about policy violations..."
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAsk()}
@@ -105,109 +112,145 @@ export default function Home() {
                     {result.explanation}
                   </p>
                 </div>
-                <div className="hidden sm:block bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-100">
-                  AI INSIGHT
-                </div>
+                {result.explanation.toLowerCase().includes("violation") ||
+                result.explanation.toLowerCase().includes("flag") ? (
+                  <div className="bg-red-50 text-red-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-red-100">
+                    🚩 Policy Flag
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-100">
+                    AI Insight
+                  </div>
+                )}
               </div>
 
-              {/* Chart Rendering - FIXED HEIGHT CONTAINER */}
-              {result.data && result.data.length > 0 ? (
+              {/* Chart Rendering */}
+              {result.data &&
+              result.data.length > 0 &&
+              result.data.length < 15 ? (
                 <div className="h-[400px] w-full mt-10 rounded-2xl bg-slate-50/50 p-4 border border-slate-50">
                   <ResponsiveContainer width="100%" height="100%">
-                    {result.chart_type === "pie" ? (
-                      <PieChart>
-                        <Pie
-                          data={result.data}
-                          dataKey={getNumberKey(result.data[0])}
-                          nameKey={getLabelKey(result.data[0])}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={130}
-                          fill="#8884d8"
-                          label
-                        >
-                          {result.data.map((entry: any, index: number) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    ) : (
-                      <BarChart
-                        data={result.data}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          vertical={false}
-                          stroke="#e2e8f0"
-                        />
-                        <XAxis
-                          dataKey={getLabelKey(result.data[0])}
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: "#64748b", fontSize: 12 }}
-                          dy={10}
-                        />
-                        <YAxis
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: "#64748b", fontSize: 12 }}
-                        />
-                        <Tooltip
-                          cursor={{ fill: "#f1f5f9" }}
-                          contentStyle={{
-                            borderRadius: "16px",
-                            border: "none",
-                            boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
-                          }}
-                        />
-                        <Bar
-                          dataKey={getNumberKey(result.data[0])}
-                          fill="#3b82f6"
-                          radius={[8, 8, 0, 0]}
-                          barSize={60}
-                        >
-                          {result.data.map((entry: any, index: number) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={entry.is_budget ? "#94a3b8" : "#3b82f6"}
-                            />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    )}
+                    <BarChart
+                      data={result.data}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#e2e8f0"
+                      />
+                      <XAxis
+                        dataKey={getLabelKey(result.data[0])}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#64748b", fontSize: 12 }}
+                        dy={10}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#64748b", fontSize: 12 }}
+                      />
+                      <Tooltip
+                        cursor={{ fill: "#f1f5f9" }}
+                        contentStyle={{
+                          borderRadius: "16px",
+                          border: "none",
+                          boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
+                        }}
+                      />
+                      <Bar
+                        dataKey={getNumberKey(result.data[0])}
+                        fill="#3b82f6"
+                        radius={[8, 8, 0, 0]}
+                        barSize={60}
+                      />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
-              ) : (
-                <div className="h-40 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl text-slate-400">
-                  No data found for this specific query.
+              ) : result.data && result.data.length >= 15 ? (
+                /* Table View for large datasets (Like Audit lists) */
+                <div className="mt-8 overflow-hidden rounded-xl border border-slate-200">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold">
+                      <tr>
+                        {Object.keys(result.data[0])
+                          .slice(0, 5)
+                          .map((key) => (
+                            <th
+                              key={key}
+                              className="px-6 py-3 border-b border-slate-200"
+                            >
+                              {key.replace("_", " ")}
+                            </th>
+                          ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-sm">
+                      {result.data.slice(0, 10).map((row: any, i: number) => (
+                        <tr
+                          key={i}
+                          className="hover:bg-slate-50/50 transition-colors"
+                        >
+                          {Object.values(row)
+                            .slice(0, 5)
+                            .map((val: any, j: number) => (
+                              <td key={j} className="px-6 py-4 text-slate-600">
+                                {val?.toString()}
+                              </td>
+                            ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="p-3 bg-slate-50 text-center text-xs text-slate-400">
+                    Showing first 10 rows
+                  </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Reasoning Toggle */}
               <div className="mt-10 pt-6 border-t border-slate-100">
                 <button
-                  onClick={() => setShowSql(!showSql)}
+                  onClick={() => setShowReasoning(!showReasoning)}
                   className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-all text-xs font-bold tracking-widest"
                 >
-                  {showSql ? (
+                  {showReasoning ? (
                     <ChevronUp size={14} />
                   ) : (
                     <ChevronDown size={14} />
                   )}
-                  SHOW ENGINE REASONING (POSTGRESQL)
+                  SHOW ENGINE REASONING
                 </button>
 
-                {showSql && (
-                  <div className="mt-4 p-6 bg-slate-900 rounded-2xl shadow-inner">
-                    <code className="text-blue-400 text-sm font-mono block overflow-x-auto whitespace-pre">
-                      {result.sql}
-                    </code>
+                {showReasoning && (
+                  <div className="mt-6 space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                    {/* SQL Section */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-tighter">
+                        <Code2 size={12} /> SQL Query (Structured ERP Data)
+                      </div>
+                      <div className="p-5 bg-slate-900 rounded-2xl shadow-inner border border-slate-800">
+                        <code className="text-blue-400 text-sm font-mono block overflow-x-auto whitespace-pre">
+                          {result.sql}
+                        </code>
+                      </div>
+                    </div>
+
+                    {/* Policy Section */}
+                    {result.policy && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-tighter">
+                          <FileText size={12} /> Policy Context (Unstructured
+                          Knowledge)
+                        </div>
+                        <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
+                          <p className="text-blue-800 text-sm italic leading-relaxed">
+                            "{result.policy}"
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
