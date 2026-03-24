@@ -13,6 +13,13 @@ export default function Home() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
+  const examples = [
+    "Show total travel and entertainment spend by region for the last 90 days.",
+    "Compare budget vs actual spend by region.",
+    "Show monthly spend trend for the last 6 months.",
+    "Audit marketing spend above 50,000 EUR.",
+    "Which cost centers have the highest total spend in the last 6 months?",
+  ];
 
   const handleAsk = async () => {
     setLoading(true);
@@ -47,6 +54,20 @@ export default function Home() {
             <p className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
               What would you like to analyze today?
             </p>
+          </div>
+          <div className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            Try one of these
+          </div>
+          <div className="mb-6 flex flex-wrap justify-center gap-2">
+            {examples.map((example) => (
+              <button
+                key={example}
+                onClick={() => setQuestion(example)}
+                className="px-3.5 py-2 rounded-full text-xs md:text-sm font-semibold text-slate-700 bg-white/80 border border-slate-200 hover:bg-white hover:text-slate-900 hover:border-slate-300 transition-all"
+              >
+                {example}
+              </button>
+            ))}
           </div>
           <ChatInput
             question={question}
