@@ -76,6 +76,12 @@ def sql_generator_node(state: AgentState) -> Dict[str, Any]:
     logger.info("--- SQL GENERATION ---")
     last_error = state.get("sql_error")
     last_query = state.get("sql_query")
+    q_lower = (state.get("question") or "").lower()
+    multi_intent = (
+        any(k in q_lower for k in ["and also", "as well as", "then ", "then also", "also show", "also list"])
+        and any(k in q_lower for k in ["top", "highest", "most", "summary", "summarize", "count", "totals"])
+        and any(k in q_lower for k in ["list", "show", "transactions", "rows", "details"])
+    )
     system_prompt = f"""
     You are a PostgreSQL expert. Use the schema and relationships to form correct joins.
     Context: {state['metadata_context']}
@@ -90,6 +96,8 @@ def sql_generator_node(state: AgentState) -> Dict[str, Any]:
     Only include is_budget filters if the user explicitly asks for budget, non-budget, or actuals.
     If the policy text includes a numeric threshold (e.g., "exceeding 50,000 EUR"), include a numeric filter that enforces it.
     Use any relevant numeric column from the schema that matches the policy context; do not invent columns.
+    If the user asks for multiple outputs in one request, return ONE SQL query only. Prefer the most actionable output.
+    If intent is audit, prefer the list of violating rows over summaries when forced to choose.
     Use TRUE/FALSE (booleans), not string literals.
     Use ONLY columns listed in SCHEMA.
     Return ONLY SQL. Must be a single SELECT statement. Max rows {settings.max_rows}.
@@ -217,6 +225,11 @@ def synthesis_node(state: AgentState) -> Dict[str, Any]:
             "details",
         ]
     )
+    multi_intent = (
+        any(k in q_lower for k in ["and also", "as well as", "then ", "then also", "also show", "also list"])
+        and any(k in q_lower for k in ["top", "highest", "most", "summary", "summarize", "count", "totals"])
+        and any(k in q_lower for k in ["list", "show", "transactions", "rows", "details"])
+    )
     system_prompt = f"""
     You are a Lead Financial Analyst. 
     INTENT: {state['intent']}
@@ -256,11 +269,18 @@ def synthesis_node(state: AgentState) -> Dict[str, Any]:
     )
     chart_type = "none" if list_intent or list_like else report.chart_type
 
+    explanation = f"{report.summary}\n\n{report.details}"
+    if multi_intent:
+        explanation = (
+            f"{explanation}\n\nNote: Your request included multiple outputs. "
+            "I returned the most actionable result; ask a follow-up for the others."
+        )
+
     return {
         "final_result": {
             "status": "ok",
             "title": report.title,
-            "explanation": f"{report.summary}\n\n{report.details}",
+            "explanation": explanation,
             "is_violation": violation_flag,
             "action": report.recommended_action,
             "chart_type": chart_type,
