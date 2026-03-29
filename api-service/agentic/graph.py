@@ -13,9 +13,20 @@ from .nodes import (
 
 
 def should_retry(state: AgentState) -> str:
-    if state["sql_error"] and state["iteration"] < settings.max_sql_retries:
+    sql_error = (state.get("sql_error") or "").lower()
+    non_retriable = [
+        "multiple statements are not allowed",
+        "only select queries are allowed",
+        "forbidden sql operation detected",
+        "sql exceeds max length",
+        "sql comments are not allowed",
+        "empty sql",
+    ]
+    if sql_error and any(msg in sql_error for msg in non_retriable):
+        return "failure"
+    if sql_error and state["iteration"] < settings.max_sql_retries:
         return "sql_gen"
-    if state["sql_error"]:
+    if sql_error:
         return "failure"
     return "synthesis"
 

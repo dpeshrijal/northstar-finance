@@ -290,5 +290,11 @@ def failure_node(state: AgentState) -> Dict[str, Any]:
     logger.info("--- FAILURE ---")
     message = "We could not execute a safe query for this request."
     if state.get("sql_error"):
-        message = f"{message} Error: {state['sql_error']}"
+        if "Multiple statements are not allowed" in state["sql_error"]:
+            message = (
+                "Your request combines multiple outputs. For safety, I can run only one SQL query at a time. "
+                "Please split the request into separate questions (e.g., one for the summary and one for the list)."
+            )
+        else:
+            message = f"{message} Error: {state['sql_error']}"
     return {"final_result": error_result("Query Failed", message, "SQL_EXECUTION_FAILED", state.get("sql_query"))}
