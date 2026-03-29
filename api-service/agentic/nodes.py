@@ -12,6 +12,28 @@ from .sql_utils import normalize_sql, validate_sql, enforce_limit
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+def _detect_multi_intent(question: str) -> bool:
+    q = (question or "").lower()
+    if not q:
+        return False
+
+    list_terms = ["list", "show", "rows", "transactions", "details", "raw"]
+    summary_terms = ["summary", "summarize", "total", "totals", "count", "counts", "by region", "by month", "by quarter", "breakdown"]
+    rank_terms = ["top", "highest", "most", "least", "lowest", "rank", "ranking"]
+    join_terms = ["and also", "as well as", "then", "then also", "also show", "also list", "plus"]
+
+    has_list = any(t in q for t in list_terms)
+    has_summary = any(t in q for t in summary_terms)
+    has_rank = any(t in q for t in rank_terms)
+    has_join = any(t in q for t in join_terms)
+
+    # Multi-intent if any two intent buckets appear, or if join terms connect intents
+    buckets = sum([has_list, has_summary, has_rank])
+    if buckets >= 2:
+        return True
+    if has_join and (has_list or has_summary or has_rank):
+        return True
+    return False
 
 def router_node(state: AgentState) -> Dict[str, str]:
     logger.info("--- ROUTING ---")
@@ -76,12 +98,7 @@ def sql_generator_node(state: AgentState) -> Dict[str, Any]:
     logger.info("--- SQL GENERATION ---")
     last_error = state.get("sql_error")
     last_query = state.get("sql_query")
-    q_lower = (state.get("question") or "").lower()
-    multi_intent = (
-        any(k in q_lower for k in ["and also", "as well as", "then ", "then also", "also show", "also list"])
-        and any(k in q_lower for k in ["top", "highest", "most", "summary", "summarize", "count", "totals"])
-        and any(k in q_lower for k in ["list", "show", "transactions", "rows", "details"])
-    )
+    multi_intent = _detect_multi_intent(state.get("question") or "")
     system_prompt = f"""
     You are a PostgreSQL expert. Use the schema and relationships to form correct joins.
     Context: {state['metadata_context']}
@@ -225,11 +242,7 @@ def synthesis_node(state: AgentState) -> Dict[str, Any]:
             "details",
         ]
     )
-    multi_intent = (
-        any(k in q_lower for k in ["and also", "as well as", "then ", "then also", "also show", "also list"])
-        and any(k in q_lower for k in ["top", "highest", "most", "summary", "summarize", "count", "totals"])
-        and any(k in q_lower for k in ["list", "show", "transactions", "rows", "details"])
-    )
+    multi_intent = _detect_multi_intent(state.get("question") or "")
     system_prompt = f"""
     You are a Lead Financial Analyst. 
     INTENT: {state['intent']}
