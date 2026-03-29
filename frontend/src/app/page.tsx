@@ -7,6 +7,7 @@ import { ChatInput } from "@/components/ChatInput";
 import { Reasoning } from "@/components/Reasoning";
 import { ChartPanel } from "@/components/ChartPanel";
 import { ViolationsTable } from "@/components/ViolationsTable";
+import { ResultsTable } from "@/components/ResultsTable";
 
 export default function Home() {
   const [question, setQuestion] = useState("");
@@ -144,6 +145,7 @@ export default function Home() {
               />
 
               <ViolationsTable result={result} />
+              <ResultsTable result={result} />
               {!result?.is_violation && <ChartPanel result={result} />}
             </motion.div>
           )}

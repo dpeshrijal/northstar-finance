@@ -1,4 +1,5 @@
 import logging
+import re
 from decimal import Decimal
 from typing import Dict, Any, List
 
@@ -110,6 +111,28 @@ def sql_generator_node(state: AgentState) -> Dict[str, Any]:
         logger.warning(f"SQL validation failed: {reason}")
         return {"sql_error": reason, "iteration": state["iteration"] + 1, "sql_query": query}
 
+    # Reject ORDER BY when user did not ask for sorting/ranking (prevents "top N" on list queries)
+    q_lower = (state.get("question") or "").lower()
+    order_by_present = bool(re.search(r"\border\s+by\b", query, re.IGNORECASE))
+    order_keywords = [
+        "top",
+        "highest",
+        "lowest",
+        "most",
+        "least",
+        "largest",
+        "smallest",
+        "order",
+        "ordered",
+        "sort",
+        "sorted",
+        "ranking",
+        "rank",
+    ]
+    if order_by_present and not any(k in q_lower for k in order_keywords):
+        logger.info("Removing ORDER BY since the question did not request sorting/ranking.")
+        query = re.sub(r"\border\s+by\b[\s\S]*?(?=(\blimit\b|$))", "", query, flags=re.IGNORECASE).strip()
+
     query = enforce_limit(query, settings.max_rows)
     try:
         with db_conn() as conn:
@@ -179,6 +202,21 @@ def synthesis_node(state: AgentState) -> Dict[str, Any]:
             "max": round(max(vals), 2),
         }
 
+    q_lower = (state.get("question") or "").lower()
+    list_intent = any(
+        k in q_lower
+        for k in [
+            "list all",
+            "list",
+            "show all",
+            "all transactions",
+            "all entries",
+            "all records",
+            "raw",
+            "detail",
+            "details",
+        ]
+    )
     system_prompt = f"""
     You are a Lead Financial Analyst. 
     INTENT: {state['intent']}
@@ -190,6 +228,8 @@ def synthesis_node(state: AgentState) -> Dict[str, Any]:
     Do NOT invent facts, totals, dates, or years.
     Do NOT infer underlying record counts beyond row_count unless explicitly present in DATA FOUND.
     Avoid statements like "single entry" unless DATA FOUND explicitly shows only one record.
+    If the question asks to list/show all records, do NOT claim "top" or "highest" unless the user asked for ranking.
+    If the results are long, say you are showing the first N rows returned.
     If row_count > 5, do NOT enumerate individual rows; summarize the count and refer to the violations table.
     If intent is analysis, focus on totals. If intent is audit, focus on violations.
     """
@@ -209,6 +249,13 @@ def synthesis_node(state: AgentState) -> Dict[str, Any]:
         logger.exception("Synthesis failed.")
         return {"final_result": error_result("Synthesis Failed", f"Report generation failed: {e}", "SYNTHESIS_FAILED")}
 
+    # Force no chart for list-style results (raw rows)
+    row0 = rows[0] if rows else {}
+    list_like = ("description" in row0 or "id" in row0) and not any(
+        k in row0 for k in ["total", "total_spend", "total_revenue", "avg", "average", "sum", "count"]
+    )
+    chart_type = "none" if list_intent or list_like else report.chart_type
+
     return {
         "final_result": {
             "status": "ok",
@@ -216,7 +263,7 @@ def synthesis_node(state: AgentState) -> Dict[str, Any]:
             "explanation": f"{report.summary}\n\n{report.details}",
             "is_violation": violation_flag,
             "action": report.recommended_action,
-            "chart_type": report.chart_type,
+            "chart_type": chart_type,
             "sql": state["sql_query"],
             "policy": state["rag_context"] if state["intent"] == "audit" else None,
             "data": state["db_data"],

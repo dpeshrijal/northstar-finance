@@ -2,7 +2,7 @@
 import * as Sentry from "@sentry/browser";
 
 export const askAgent = async (message: string) => {
-  const maxRetries = 2;
+  const maxRetries = 1;
   const baseDelayMs = 600;
   const timeoutMs = 15000;
 
@@ -31,7 +31,10 @@ export const askAgent = async (message: string) => {
           extra: { bodyPreview, attempt },
         });
 
-        if ((response.status >= 500 || response.status === 429) && attempt < maxRetries) {
+        if (
+          (response.status >= 500 || response.status === 429) &&
+          attempt < maxRetries
+        ) {
           const delay = baseDelayMs * Math.pow(2, attempt);
           await sleep(delay);
           continue;
@@ -43,7 +46,11 @@ export const askAgent = async (message: string) => {
     } catch (err: any) {
       const isAbort = err?.name === "AbortError";
       Sentry.captureException(err, {
-        tags: { source: "askAgent", attempt: String(attempt), timeout: String(isAbort) },
+        tags: {
+          source: "askAgent",
+          attempt: String(attempt),
+          timeout: String(isAbort),
+        },
       });
 
       if (attempt < maxRetries) {
